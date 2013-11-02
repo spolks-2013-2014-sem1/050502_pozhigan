@@ -22,20 +22,29 @@ rescue Docopt::Exit => e
 end
 
 
-socket = Socket.new(AF_INET,SOCK_STREAM,0)
-socket.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR,true)
+server_socket = Socket.new(AF_INET,SOCK_STREAM,0)
+server_socket.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR,true)
 
-socket.bind(Socket.sockaddr_in(args['<port_num>'],args['<host_adr>']))
-socket.listen(5)
+server_socket.bind(Socket.sockaddr_in(args['<port_num>'],args['<host_adr>']))
+server_socket.listen(1)
+client_socket_fd, _ =  server_socket.sysaccept
 
-client_socket = Socket.for_fd(socket.sysaccept)
+client_socket = Socket.for_fd(client_socket_fd)
 loop do
+  begin
   data = client_socket.readline.chomp
-  puts "Data received: #{data}"
-  client_socket.puts "Data send: #{data} lol"
-  if data == "shut up"
+  if data == 'quit'
     break
   end
 
+  rescue
+    puts 'Client disconnected' #EOFFError
+    server_socket.close
+    exit
+  end
+  puts "Data received: #{data}"
+  client_socket.puts "You send: #{data}. \n Type quit for quit :3"
+
 end
-socket.close
+
+server_socket.close
