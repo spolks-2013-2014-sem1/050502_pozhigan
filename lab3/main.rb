@@ -23,13 +23,22 @@ when 'server'
 
       open(file_address, 'r:binary') do |f|
         while (read_data = f.read(BUFFER_SIZE))
-          client_socket.write(read_data)
+          begin
+            client_socket.write(read_data)
+          rescue Errno::ECONNRESET
+            puts 'Client disconnected'
+            break
+          rescue Errno::EPIPE
+            puts 'Client disconnected'
+            break
+          end
+
         end
 
         client_socket.close
       end
 
-      puts 'File transfer finished'
+      puts 'Server finished work'
     end
 
 when  'client'
@@ -41,12 +50,17 @@ when  'client'
       puts 'Client connected'
 
       open(file_address + '_copy', 'w:binary') do |f|
-        while (received_data = s.read)
-          if received_data == ''
-            puts 'File transfer finished'
-            break
+        begin
+          while (received_data = s.read)
+            if received_data == ''
+              puts 'File transfer finished'
+              break
+            end
+            f.write(received_data)
           end
-          f.write(received_data)
+        rescue Errno::EPIPE
+          puts 'Server disconnected'
+          break
         end
       end
     end
