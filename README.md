@@ -9,6 +9,8 @@ lab 2 start
 lab 3 start
 
 1. run program
+
     ruby main.rb server 'fileName' 'port'
+    
     ruby main.rb client 'fileName' 'port' 'serverIpAddress'
 2. Wait for end.
