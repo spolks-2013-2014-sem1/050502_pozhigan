@@ -2,7 +2,7 @@ require 'socket'
 
 include Socket::Constants
 
-port_num, host_adr, type, file_address = ARGV
+type, file_address, port_num, host_adr  = ARGV
 BUFFER_SIZE = 32 * 1024
 
 case type
