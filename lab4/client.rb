@@ -4,7 +4,7 @@ require '../spolks_lib/XTCPSocket'
 port_num, host_adr, file_address = ARGV
 
 open(file_address, 'r:binary') do |f|
-  client = Xsocket.new(port_num, host_adr)
+  client = XTCPSocket.new(port_num, host_adr)
 
   client.connect do |server|
     counter = 16

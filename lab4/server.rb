@@ -5,7 +5,7 @@ require '../spolks_lib/Constants'
 port_num, file_address = ARGV
 
 open(file_address + '_copy', 'w:binary') do |f|
-  server = Xsocket.new(port_num, '')
+  server = XTCPSocket.new(port_num, '')
 
   received = 0
 
