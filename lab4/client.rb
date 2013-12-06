@@ -2,10 +2,6 @@ require 'socket'
 require '../spolks_lib/XSocket'
 
 port_num, host_adr, file_address = ARGV
-BUFFER_SIZE = 32 * 1024
-TIMEOUT = 1000
-OOB_CHAR = '!'
-
 
 open(file_address, 'r:binary') do |f|
   client = Xsocket.new(port_num, host_adr)

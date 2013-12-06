@@ -1,12 +1,8 @@
 require 'socket'
 require '../spolks_lib/XSocket'
-
-include Socket::Constants
-
+require '../spolks_lib/Constants'
 
 port_num, file_address = ARGV
-BUFFER_SIZE = 64 * 1024
-OOB_CHAR = '!'
 
 open(file_address + '_copy', 'w:binary') do |f|
   server = Xsocket.new(port_num, '')
