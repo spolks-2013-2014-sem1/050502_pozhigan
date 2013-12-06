@@ -25,7 +25,6 @@ open(file_address, 'r:binary') do |f|
         puts 'STOPPED'
         exit
       end
-      sleep(0.1) # wait some time for comfortable testing
     end
     puts 'Finished'
     client.close
