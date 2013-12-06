@@ -1,5 +1,5 @@
 require 'socket'
-require 'Constants'
+require '../spolks_lib/Constants'
 
 
 class XTCPSocket
@@ -17,6 +17,7 @@ class XTCPSocket
   def chunk_size=(new_size)
     @chunk_size = new_size
   end
+
 
   def listen(&code)
     @socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)

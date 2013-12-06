@@ -7,100 +7,56 @@ case protocol
 when 'udp'
   case type
   when 'server'
-    self.start_udp_server(port, file_name)
+    server = XUDPSocket.new(port, '')
+    server.bind
+    server.receive_n_write_to_file(file_name)
+    server.close
   when 'client'
-    self.start_udp_client(port, host, file_name)
+    client = XUDPSocket.new(port, host)
+    client.read_file_n_send(file_name)
+    client.close
+  else
+    puts 'i dunno lol'
   end
 when 'tcp'
   case type
   when 'server'
-    self.start_tcp_server(port, file_name)
-  when 'client'
-    self.start_tcp_client(port, host, file_name)
-  end
-end
-
-def start_udp_client(port, host, file_name)
-  open(file_name, 'r:binary') do |f|
-    client = XUDPSocket.new(port, host)
-    client.connect do |server|
-      until f.eof?
-        _, writer = IO.select(nil, [server], nil, 10)
-        break unless writer
-        if (io = writer[0])
-          package = file.read(BUFFER_SIZE)
-          if package.nil? || package.empty?
-            io.send(UDP_END, 0)
-            break
+    open(file_name + '_copy', 'w:binary') do |f|
+      server = XTCPSocket.new(port, '')
+      server.listen do |client|
+        puts 'incoming connection from %s' % client.remote_address.inspect_sockaddr
+        loop do
+          reader, _ = IO.select([client], nil, nil, TIMEOUT)
+          break unless reader
+          if (io = reader[0])
+            package = io.recv(BUFFER_SIZE)
+            break if (package.nil? || package.empty?)
+            f.write(package)
           end
-          io.send(package, 0)
         end
-      end
-      puts 'Finished'
-      client.close
-    end
-  end
-end
-
-
-# Receive file
-def start_udp_server(port, file_name)
-  open(file_name + '_copy', 'w:binary') do |f|
-    server = XTCPSocket.new(port, '')
-    server.bind
-    puts 'incoming connection from %s' % client.remote_address.inspect_sockaddr
-    loop do
-      reader, _ = IO.select([server], nil, nil, TIMEOUT)
-      break unless reader
-      if (io = reader[0])
-        package = io.recv(BUFFER_SIZE)
-        break if (package.nil? || package.empty? || package == UDP_END)
-        f.write(package)
+        server.close
       end
     end
-    server.close
-  end
-end
-
-# Send file
-def start_tcp_client(port, host, file_name)
-
-  open(file_name, 'r:binary') do |f|
-    client = XTCPSocket.new(port, host)
-    client.connect do |server|
-      until f.eof?
-        _, writer = IO.select(nil, [server], nil, 10)
-        break unless writer
-        if (io = writer[0])
-          package = file.read(BUFFER_SIZE)
-          break if (package.nil? || package.empty?)
-          io.send(package, 0)
+  when 'client'
+    open(file_name, 'r:binary') do |f|
+      client = XTCPSocket.new(port, host)
+      client.connect do |server|
+        until f.eof?
+          _, writer = IO.select(nil, [server], nil, 10)
+          break unless writer
+          if (io = writer[0])
+            package = f.read(BUFFER_SIZE)
+            break if (package.nil? || package.empty?)
+            io.send(package, 0)
+          end
         end
+        puts 'Finished'
+        client.close
       end
-      puts 'Finished'
-      client.close
     end
+  else
+    puts 'i dunno lol'
   end
+else
+  puts 'i dunno lol'
 end
-
-
-def start_tcp_server(port, file_name)
-  open(file_name + '_copy', 'w:binary') do |f|
-    server = XTCPSocket.new(port, '')
-    server.listen do |client|
-      puts 'incoming connection from %s' % client.remote_address.inspect_sockaddr
-      loop do
-        reader, _ = IO.select([client], nil, nil, TIMEOUT)
-        break unless reader
-        if (io = reader[0])
-          package = io.recv(BUFFER_SIZE)
-          break if (package.nil? || package.empty?)
-          f.write(package)
-        end
-      end
-      server.close
-    end
-  end
-end
-
-

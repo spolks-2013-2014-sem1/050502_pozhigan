@@ -1,5 +1,5 @@
 require 'socket'
-require 'Constants'
+require '../spolks_lib/Constants'
 
 class XUDPSocket
 
@@ -33,8 +33,37 @@ class XUDPSocket
   end
 
 
-  def send(msg, flags, dst_addr)
-    @socket.send(msg, flags, dst_addr)
+  def receive_n_write_to_file(file_name)
+    open(file_name + '_copy', 'w:binary') do |f|
+      loop do
+        reader, _ = IO.select([@socket], nil, nil, TIMEOUT)
+        break unless reader
+        if (io = reader[0])
+          package = io.recv(BUFFER_SIZE)
+          break if (package.nil? || package.empty? || package == UDP_END)
+          f.write(package)
+        end
+      end
+    end
+  end
+
+
+  def read_file_n_send(file_name)
+    open(file_name, 'r:binary') do |f|
+      @socket.connect(@sockaddr)
+      until f.eof?
+        _, writer = IO.select(nil, [@socket], nil, TIMEOUT)
+        break unless writer
+        if (io = writer[0])
+          package = f.read(BUFFER_SIZE)
+          if package.nil? || package.empty?
+            io.send(UDP_END, 0)
+            break
+          end
+          io.send(package, 0)
+        end
+      end
+    end
   end
 
   def close
