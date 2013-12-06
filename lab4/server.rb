@@ -1,41 +1,43 @@
 require 'socket'
+require '../spolks_lib/XSocket'
 
 include Socket::Constants
 
 
 port_num, file_address = ARGV
-BUFFER_SIZE = 32 * 1024
+BUFFER_SIZE = 64 * 1024
 OOB_CHAR = '!'
 
-Socket.open(AF_INET, SOCK_STREAM, 0) do |s|
-  s.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
+open(file_address + '_copy', 'w:binary') do |f|
+  server = Xsocket.new(port_num, '')
 
-  s.bind(Socket.sockaddr_in(port_num, ''))
-  s.listen(1)
+  received = 0
 
-  puts 'Server is listening'
+  server.listen do |client|
+    puts 'incoming connection from %s' % client.remote_address.inspect_sockaddr
 
-  client_socket_fd, _ = s.sysaccept
-
-  client_socket = Socket.for_fd(client_socket_fd)
-
-  open(file_address, 'r:binary') do |f|
-    while (read_data = f.read(BUFFER_SIZE))
+    trap(:URG) do
       begin
-        client_socket.puts(read_data)
-        s.send(OOB_CHAR, Socket::MSG_OOB)
-      rescue Errno::ECONNRESET
-        puts 'Client disconnected'
-        break
-      rescue Errno::EPIPE
-        puts 'Client disconnected'
-        break
+        client.recv(1, Socket::MSG_OOB)
+      rescue Exception
+        # ignored
+      ensure
+        puts 'got %s bytes of normal data' % received
       end
-
     end
 
-    client_socket.close
+    client.fcntl(8, Process.pid) # so we will get sigURG
+    while (data = client.read(BUFFER_SIZE)) do
+      f.write(data)
+      if client.eof?
+        puts 'remote closed connection'
+        break
+      end
+      received += data.size
+    end
+    puts 'Received!!!'
+    server.close
   end
 
-  puts 'Server finished work'
+
 end

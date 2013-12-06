@@ -1,50 +1,38 @@
 require 'socket'
-
-include Socket::Constants
-
+require '../spolks_lib/XSocket'
 
 port_num, host_adr, file_address = ARGV
 BUFFER_SIZE = 32 * 1024
+TIMEOUT = 1000
 OOB_CHAR = '!'
 
-Socket.open(AF_INET, SOCK_STREAM, 0) do |s|
-  s.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
-  s.connect(Socket.sockaddr_in(port_num, host_adr))
 
-  trap(:URG) do
+open(file_address, 'r:binary') do |f|
+  client = Xsocket.new(port_num, host_adr)
 
-    data = s.recv(100, Socket::MSG_OOB)
-    puts "got urgent %s" %data
-    readline
-
-  end
-
-  trap("URG") do
-    begin
-      data = s.recv(100, Socket::MSG_OOB)
-      puts "got urgent %s" %data
-      readline
-    rescue Exception => err
-      puts err.inspect
-    end
-  end
-
-  puts 'Client connected'
-
-  s.fcntl(8, Process.pid)
-  open(file_address + '_copy', 'w:binary') do |f|
-    begin
-      while (received_data = s.gets)
-        if (received_data == '')
-          puts 'File transfer finished'
-          break
+  client.connect do |server|
+    counter = 16
+    until f.eof?
+      begin
+        if counter == 0
+          puts 'sending 1 byte of OOB data: %s' % OOB_CHAR.inspect
+          server.send(OOB_CHAR, Socket::MSG_OOB)
+          counter = 32
+        else
+          server.write(f.read(BUFFER_SIZE))
+          counter = counter - 1
         end
-        puts 'lol'
-        f.write(received_data)
+      rescue Errno::EPIPE
+        puts 'remote closed socket'
+        exit
+      rescue Interrupt
+        puts 'STOPPED'
+        exit
       end
-    rescue Errno::EPIPE
-      puts 'Server disconnected'
-      break
+      sleep(0.1) # wait some time for comfortable testing
     end
+    puts 'Finished'
+    client.close
   end
 end
+
