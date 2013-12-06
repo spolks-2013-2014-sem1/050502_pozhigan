@@ -1,6 +1,24 @@
 require '../spolks_lib/XTCPSocket'
 require '../spolks_lib/XUDPSocket'
 
+protocol, type, file_name, port, host = ARGV
+
+case protocol
+when 'udp'
+  case type
+  when 'server'
+    self.start_udp_server(port, file_name)
+  when 'client'
+    self.start_udp_client(port, host, file_name)
+  end
+when 'tcp'
+  case type
+  when 'server'
+    self.start_tcp_server(port, file_name)
+  when 'client'
+    self.start_tcp_client(port, host, file_name)
+  end
+end
 
 def start_udp_client(port, host, file_name)
   open(file_name, 'r:binary') do |f|
