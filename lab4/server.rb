@@ -1,5 +1,5 @@
 require 'socket'
-require '../spolks_lib/XSocket'
+require '../spolks_lib/XTCPSocket'
 require '../spolks_lib/Constants'
 
 port_num, file_address = ARGV
